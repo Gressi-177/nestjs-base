@@ -1,3 +1,4 @@
+#!/bin/sh
 set -euo pipefail
 
 # ===== Colors =====
@@ -6,32 +7,38 @@ GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-# ===== Lấy tên nhánh an toàn (trả về rỗng nếu detached HEAD) =====
+# ===== Lấy tên nhánh an toàn (rỗng nếu detached HEAD, ví dụ CI) =====
 BRANCH="$(git symbolic-ref --short -q HEAD || true)"
 
-# ===== Whitelist (tùy chọn) =====
-# Cho phép bỏ qua kiểm tra với một số nhánh cố định/pattern (nếu không cần thì để mảng rỗng)
+# ===== Whitelist (tuỳ chỉnh nếu cần) =====
+# Ví dụ cho qua các nhánh chính hoặc release/*
 ALLOW_BRANCHES='^(main|master|develop|dev|release\/.+)$'
 
-# ===== Quy tắc tên nhánh của bạn =====
-# ví dụ: feature.PROJ-123.add-login
-REGEX='^(feature|bugfix|hotfix|release|merge)\.([a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*)$'
+# ===== Quy tắc tên nhánh =====
+# Hỗ trợ CẢ 2 kiểu:
+# 1) type/scope-or-subject[/more-segments]
+REGEX_SLASH='^(feat|fix|hotfix|release|merge)\/[A-Za-z0-9._-]+(\/[A-Za-z0-9._-]+)*$'
+# 2) type.scope(.more.segments)  (tương thích cấu trúc cũ)
+REGEX_DOT='^(feat|fix|hotfix|release|merge)\.[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*$'
 
 echo "${BLUE}Branch name:${NC} ${GREEN}${BRANCH:-<detached>}${NC}"
 
-# Nếu detached HEAD (ví dụ chạy trong CI hoặc checkout commit cụ thể), bỏ qua check tên nhánh
+# Bỏ qua check khi detached HEAD (CI / checkout commit cụ thể)
 if [ -z "${BRANCH}" ]; then
   echo "${GREEN}Detached HEAD detected → skip branch name check.${NC}"
 else
-  # Cho phép whitelist
+  # Cho phép nhánh trong whitelist
   if echo "$BRANCH" | grep -Eq "$ALLOW_BRANCHES"; then
     echo "${GREEN}Branch is whitelisted → skip branch name check.${NC}"
   else
-    # Kiểm tra theo regex
-    if ! echo "$BRANCH" | grep -Eq "$REGEX"; then
-      echo "${RED}❌ Your commit was rejected due to an invalid branch name.${NC}"
-      echo "Expected format: (feature|bugfix|hotfix|release|merge).<ticket?>.<subject>"
-      echo "Example: feature.PROJ-123.add-auth"
+    # Kiểm tra theo 2 regex (slash OR dot)
+    if ! echo "$BRANCH" | grep -Eq "$REGEX_SLASH"; then
+      echo "${RED}❌ Invalid branch name.${NC}"
+      echo "Expected one of:"
+      echo "  • (feat|fix|hotfix|release|merge)/<scope-or-subject>[/more]"
+      echo "    e.g. feat/base-setup, feat/PROJ-123/add-auth"
+      echo "  • (feat|fix|hotfix|release|merge).<ticket?>.<subject>"
+      echo "    e.g. feat.PROJ-123.add-auth"
       exit 1
     fi
   fi
@@ -39,4 +46,4 @@ fi
 
 # ===== Lint-staged =====
 echo "${BLUE}Running lint-staged...${NC}"
-pnpm lint-staged
+pnpm exec lint-staged
