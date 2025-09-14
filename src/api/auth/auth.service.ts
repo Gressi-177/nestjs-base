@@ -12,8 +12,6 @@ import { UsersService } from '../users/users.service';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { UserEntity } from './entities/user.entity';
 
-// Temporarily commented out Google OAuth related code
-/*
 interface GoogleUser {
   googleId: string;
   email: string;
@@ -21,7 +19,6 @@ interface GoogleUser {
   lastName: string;
   picture?: string;
 }
-*/
 
 @Injectable()
 export class AuthService {
@@ -178,8 +175,6 @@ export class AuthService {
     return user;
   }
 
-  // Temporarily commented out Google OAuth validation
-  /*
   async validateGoogleUser({
     googleId,
     email,
@@ -223,5 +218,4 @@ export class AuthService {
       throw new Error('Failed to process Google user');
     }
   }
-  */
 }

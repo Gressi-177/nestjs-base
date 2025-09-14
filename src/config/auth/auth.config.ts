@@ -17,20 +17,16 @@ class EnvironmentVariablesValidator {
   JWT_REFRESH_EXPIRATION_TIME: string;
 
   @IsString()
-  @IsOptional()
-  BASIC_AUTH_USERNAME: string;
-
-  @IsString()
   @IsNotEmpty()
-  BASIC_AUTH_PASSWORD: string;
-
-  @IsString()
-  @IsNotEmpty()
-  GITHUB_CLIENT_ID: string;
+  GOOGLE_CLIENT_ID: string;
 
   @IsString()
   @IsOptional()
-  GITHUB_CLIENT_SECRET: string;
+  GOOGLE_CLIENT_SECRET: string;
+
+  @IsString()
+  @IsOptional()
+  GOOGLE_CALLBACK_URL: string;
 }
 
 export function getConfig(): AuthConfig {
@@ -38,16 +34,10 @@ export function getConfig(): AuthConfig {
     jwtSecret: process.env.JWT_SECRET,
     jwtExpirationTime: process.env.JWT_EXPIRATION_TIME,
     jwtRefreshExpirationTime: process.env.JWT_REFRESH_EXPIRATION_TIME,
-    basicAuth: {
-      username: process.env.BASIC_AUTH_USERNAME,
-      password: process.env.BASIC_AUTH_PASSWORD,
-    },
-    oAuth: {
-      github: {
-        clientId: process.env.GITHUB_CLIENT_ID,
-        clientSecret: process.env.GITHUB_CLIENT_SECRET,
-      },
-    },
+
+    googleClientId: process.env.GOOGLE_CLIENT_ID,
+    googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    googleCallbackURL: process.env.GOOGLE_CALLBACK_URL,
   };
 }
 

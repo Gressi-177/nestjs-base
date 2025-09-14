@@ -5,12 +5,14 @@ import {
   ValidationError,
   ValidationPipe,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NestFactory, Reflector } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 
-import { ConfigService } from '@nestjs/config';
 import * as bodyParser from 'body-parser';
+import helmet from 'helmet';
 import { setupGracefulShutdown } from 'nestjs-graceful-shutdown';
+
 import { AppModule } from './app.module';
 import { GlobalConfig } from './config/config.type';
 import setupSwagger from './tools/swagger/swagger.setup';
@@ -25,7 +27,6 @@ async function bootstrap() {
 
   app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
-  // app.setGlobalPrefix('api');
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -37,6 +38,10 @@ async function bootstrap() {
         new UnprocessableEntityException(errors),
     }),
   );
+
+  const reflector = app.get(Reflector);
+  app.useGlobalInterceptors(new ClassSerializerInterceptor(reflector));
+
   app.enableCors({
     origin: configService.getOrThrow('app.corsOrigin', { infer: true }),
     methods: ['GET', 'PATCH', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],
@@ -49,54 +54,25 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // app.use(
-  //   helmet({
-  //     contentSecurityPolicy: {
-  //       directives: {
-  //         defaultSrc: ["'self'"],
-  //         styleSrc: ["'self'", "'unsafe-inline'"],
-  //         scriptSrc: [
-  //           "'self'",
-  //           "'unsafe-inline'",
-  //           'https://cdn.jsdelivr.net/npm/@scalar/api-reference',
-  //         ],
-  //         connectSrc: ["'self'"],
-  //         imgSrc: ["'self'", 'data:', 'https:'],
-  //       },
-  //     },
-  //   }),
-  // );
-
-  // Interceptors
-  const reflector = app.get(Reflector);
-  app.useGlobalInterceptors(new ClassSerializerInterceptor(reflector));
+  app.use(
+    helmet.hidePoweredBy(),
+    helmet.frameguard({ action: 'sameorigin' }),
+    helmet.noSniff(),
+  );
 
   if (env !== 'production') {
     setupSwagger(app);
   }
 
-  // TODO: Add Sentry
-
   if (env !== 'local') {
     setupGracefulShutdown({ app });
   }
 
-  // TODO: Add basic auth middleware
-  // const pathsToIntercept = [
-  //   SWAGGER_PATH,
-  //   `/api/auth/reference`, // Better Auth API's
-  // ];
-  // app.use((req, res, next) => {
-  //   if (pathsToIntercept.some((p) => req.path.startsWith(p))) {
-  //     return basicAuthMiddleware(req, res, next);
-  //   }
-  //   next();
-  // });
+  // TODO: Add Sentry integration
+  // TODO: Add basic auth middleware for sensitive endpoints
+  // const pathsToIntercept = [SWAGGER_PATH, `/api/auth/reference`];
 
-  await app.listen(
-    configService.getOrThrow('app.port', { infer: true }),
-    // '0.0.0.0',
-  );
+  await app.listen(configService.getOrThrow('app.port', { infer: true }));
 
   // eslint-disable-next-line no-console
   console.info(`\x1b[34m$ Server running at ${await app.getUrl()}`);

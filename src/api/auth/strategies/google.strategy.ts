@@ -1,7 +1,4 @@
-// Temporarily commented out Google OAuth strategy to avoid configuration errors
-// TODO: Uncomment and configure Google OAuth when needed
-
-/*
+import { GlobalConfig } from '@/config/config.type';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
@@ -11,12 +8,18 @@ import { AuthService } from '../auth.service';
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(
-    configService: ConfigService,
+    configService: ConfigService<GlobalConfig>,
     private authService: AuthService,
   ) {
-    const clientID = configService.get<string>('GOOGLE_CLIENT_ID');
-    const clientSecret = configService.get<string>('GOOGLE_CLIENT_SECRET');
-    const callbackURL = configService.get<string>('GOOGLE_CALLBACK_URL');
+    const clientID = configService.getOrThrow('auth.googleClientId', {
+      infer: true,
+    });
+    const clientSecret = configService.getOrThrow('auth.googleClientSecret', {
+      infer: true,
+    });
+    const callbackURL = configService.getOrThrow('auth.googleCallbackURL', {
+      infer: true,
+    });
 
     if (!clientID || !clientSecret || !callbackURL) {
       throw new Error(
@@ -50,4 +53,3 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     return user;
   }
 }
-*/
